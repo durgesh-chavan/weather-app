@@ -44,6 +44,28 @@ const getWeatherGradient = (weatherCode) => {
   return "from-blue-400 via-blue-500 to-blue-600";
 };
 
+// Calculate Comfort Index dynamically
+const calculateComfortIndex = (temperature, humidity) => {
+  let score = 100;
+
+  // Penalize based on temperature
+  if (temperature < 18) {
+    score -= (18 - temperature) * 2; // colder = less comfort
+  } else if (temperature > 26) {
+    score -= (temperature - 26) * 2; // hotter = less comfort
+  }
+
+  // Penalize based on humidity
+  if (humidity < 30) {
+    score -= (30 - humidity); // dry
+  } else if (humidity > 60) {
+    score -= (humidity - 60); // humid
+  }
+
+  // Clamp between 0 and 100
+  return Math.max(0, Math.min(100, score));
+};
+
 export default function WeatherCard({ data, forecast }) {
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -103,9 +125,15 @@ export default function WeatherCard({ data, forecast }) {
     wind: forecast.daily.windspeed_10m_max ? forecast.daily.windspeed_10m_max[index] : 0,
   }));
 
+  // Use calculateComfortIndex
+  const comfortScore = calculateComfortIndex(
+    data.temperature_2m,
+    data.relative_humidity_2m
+  );
+
   const comfortData = [
-    { name: "Comfort", value: 85, color: "#10B981" },
-    { name: "Discomfort", value: 15, color: "#EF4444" },
+    { name: "Comfort", value: comfortScore, color: "#10B981" },
+    { name: "Discomfort", value: 100 - comfortScore, color: "#EF4444" },
   ];
 
   const uvIndexData = [
@@ -250,7 +278,7 @@ export default function WeatherCard({ data, forecast }) {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">85%</div>
+                      <div className="text-2xl font-bold text-green-600">{comfortScore}%</div>
                       <div className="text-xs text-gray-600">Comfortable</div>
                     </div>
                   </div>
