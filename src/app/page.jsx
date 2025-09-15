@@ -49,74 +49,64 @@ export default function Home() {
   }
 
   async function handleSearch(searchInput) {
-    try {
-      setLoading(true);
-      setError("");
-      let coords;
-      let name, country;
-      
-      if (typeof searchInput === "string") {
-        coords = await getCoordinates(searchInput);
-        name = coords.name;
-        country = coords.country;
-      } else if (searchInput && searchInput.coords) {
-        // For recent searches: full object with coords, name, country
-        coords = searchInput.coords;
-        name = searchInput.name;
-        country = searchInput.country;
-      } else {
-        // Direct coords object
-        coords = searchInput;
-        // For direct coords, we might need to fetch name/country, but assuming it's provided or skip
-        name = "Unknown City";
-        country = "Unknown";
-      }
-      
-      const { latitude, longitude } = coords;
-      
-      const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weathercode,pressure_msl,windspeed_10m,winddirection_10m,is_day&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,precipitation_probability_max,weathercode,uv_index_max,sunrise,sunset&forecast_days=7&timezone=auto`
-      );
-      
-      const response = await res.json();
-      
-      if (!response.current) {
-        throw new Error("Invalid weather data received");
-      }
-      
-      const current = response.current;
-      
-      // Defensive: check for daily and sunrise/sunset arrays
-      const hasSunrise = response.daily && Array.isArray(response.daily.sunrise) && response.daily.sunrise.length > 0;
-      const hasSunset = response.daily && Array.isArray(response.daily.sunset) && response.daily.sunset.length > 0;
-      
-      const weatherData = {
-        ...current,
-        city: name,
-        country,
-        sunrise: hasSunrise ? response.daily.sunrise[0] : null,
-        sunset: hasSunset ? response.daily.sunset[0] : null
-      };
-      
-      setWeather(weatherData);
-      setForecast(response);
-      
-      if (typeof searchInput !== "string" && searchInput && searchInput.name) {
-        // Update recent searches only for new searches, not recent ones
-        const newSearch = { name, country, coords: { latitude, longitude } };
-        const updatedRecent = [newSearch, ...recentSearches.filter((r) => r.name !== name)].slice(0, 5);
-        setRecentSearches(updatedRecent);
-        localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
-      }
-      setCityInput("");
-    } catch (err) {
-      setError(err.message || "Failed to fetch weather data");
-      setWeather(null);
-      setForecast(null);
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    setError("");
+    
+    let latitude, longitude, name, country;
+
+    if (typeof searchInput === "string") {
+      const coords = await getCoordinates(searchInput);
+      latitude = coords.latitude;
+      longitude = coords.longitude;
+      name = coords.name || searchInput;
+      country = coords.country || "Unknown";
+    } else {
+      // From suggestion or recent search
+      latitude = searchInput.latitude || searchInput.coords?.latitude;
+      longitude = searchInput.longitude || searchInput.coords?.longitude;
+      name = searchInput.name || "Unknown City";
+      country = searchInput.country || "Unknown";
     }
+
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weathercode,pressure_msl,windspeed_10m,winddirection_10m,is_day&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,precipitation_probability_max,weathercode,uv_index_max,sunrise,sunset&forecast_days=7&timezone=auto`
+    );
+    const response = await res.json();
+
+    if (!response.current) throw new Error("Invalid weather data received");
+
+    const current = response.current;
+
+    const weatherData = {
+      ...current,
+      city: name,
+      country,
+      sunrise: response.daily?.sunrise?.[0] || null,
+      sunset: response.daily?.sunset?.[0] || null,
+    };
+
+    setWeather(weatherData);
+    setForecast(response);
+
+    // Save recent searches (only if it was from suggestion, not plain string)
+    if (typeof searchInput !== "string") {
+      const newSearch = { name, country, coords: { latitude, longitude } };
+      const updatedRecent = [newSearch, ...recentSearches.filter((r) => r.name !== name)].slice(0, 5);
+      setRecentSearches(updatedRecent);
+      localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
+    }
+
+    setCityInput("");
+  } catch (err) {
+    setError(err.message || "Failed to fetch weather data");
+    setWeather(null);
+    setForecast(null);
+  } finally {
+    setLoading(false);
   }
+}
+
 
   const handleRecentSearch = (search) => {
     handleSearch(search); // Pass full search object

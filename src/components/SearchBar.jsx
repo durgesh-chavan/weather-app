@@ -21,11 +21,12 @@ export default function SearchBar({ onSearch, suggestions, onSuggestionSelect, c
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
-    setCity(suggestion.name);
-    onSuggestionSelect(suggestion);
-    setShowDropdown(false);
-  };
+const handleSuggestionClick = (suggestion) => {
+  setCity(suggestion.name);
+  onSuggestionSelect(suggestion);   // send full object, not just name
+  setShowDropdown(false);
+};
+
 
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -48,7 +49,7 @@ export default function SearchBar({ onSearch, suggestions, onSuggestionSelect, c
           </svg>
         </button>
       </form>
-      
+
       {showDropdown && suggestions?.length > 0 && (
         <ul className="absolute top-full left-0 right-0 bg-white rounded-xl mt-1 shadow-lg max-h-60 overflow-y-auto z-10 border border-gray-200">
           {suggestions.map((suggestion, index) => (
