@@ -31,10 +31,7 @@ Weather Now is a modern, user-friendly weather application that provides **real-
 
 ---
 
-## 📸 Screenshots
-> Screenshots will be added soon to showcase the app's UI.
-
-Example placeholder (replace with actual images):  
+## 📸 Screenshots 
 ![Weather Now Screenshot](./public/screenshot.png)
 
 ---
